@@ -1,6 +1,6 @@
 name: "Run ECS task"
 description: "GitHub Action to run a task on Amazon ECS and output CloudWatch Logs"
-author: yyoshiki41
+author: kwood
 branding:
   icon: "cloud"
   color: "orange"
@@ -10,8 +10,11 @@ inputs:
     description: "AWS Region"
     required: false
     default: "ap-northeast-1"
+  copy-definition-from:
+    required: false
+    description: "The task family to copy the task definition from. Either this or `task-definition` is required."
   task-definition:
-    required: true
+    required: false
     description: "The path to the task definition file"
   task-definition-family:
     description: "The name for your task definition"
@@ -63,7 +66,14 @@ runs:
           sudo ./aws/install --update
           awscli --version
         fi
-
+    - name: Clone task definition from copy-definition-from
+      shell: bash
+      run: |
+        if ! [ '${{ inputs.copy-definition-from }}' != '' ]
+          aws ecs describe-task-definition --task-definition ${{inputs.copy-definition-from}} > /tmp/task-definition.json
+        else
+          cp ${{inputs.task-definition}} /tmp/task-definition.json
+        fi
     - name: Register ECS task definition
       shell: bash
       id: task-def-register
@@ -71,7 +81,7 @@ runs:
         revision=$(aws ecs register-task-definition \
           --region ${{ inputs.region }} \
           --family ${{ inputs.task-definition-family }} \
-          --cli-input-json file://${{ inputs.task-definition }} \
+          --cli-input-json file:///tmp/task-definition.json \
           --query taskDefinition.revision)
         echo "::set-output name=revision::$revision"
 
