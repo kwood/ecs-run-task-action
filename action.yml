@@ -70,7 +70,7 @@ runs:
       shell: bash
       run: |
         if ! [ '${{ inputs.copy-definition-from }}' != '' ]
-          aws ecs describe-task-definition --task-definition ${{inputs.copy-definition-from}} > /tmp/task-definition.json
+          aws ecs describe-task-definition --task-definition eb-app-staging-backend | jq .taskDefinition | jq "del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)" > /tmp/task-definition.json
         else
           cp ${{inputs.task-definition}} /tmp/task-definition.json
         fi
